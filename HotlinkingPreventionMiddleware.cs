@@ -19,18 +19,22 @@ namespace HotlinkingPrevention
 
         public async Task Invoke(HttpContext context)
         {
-            var applicationUrl = $"{context.Request.Scheme}://{context.Request.Host.Value}";
-            var headersDictionary = context.Request.Headers;
-            var urlReferrer = headersDictionary[HeaderNames.Referer].ToString();
-
-            if(!string.IsNullOrEmpty(urlReferrer) && !urlReferrer.StartsWith(applicationUrl))
-            {
-                var unauthorizedImagePath = Path.Combine(_wwwrootFolder,"Images/Unauthorized.png");
-                
-                await context.Response.SendFileAsync(unauthorizedImagePath);
-            }
-            
             await _next(context);
+            var isImage = context.Response.ContentType.StartsWith("image/");
+
+            if (isImage)
+            {
+                var applicationUrl = $"{context.Request.Scheme}://{context.Request.Host.Value}";
+                var headersDictionary = context.Request.Headers;
+                var urlReferrer = headersDictionary[HeaderNames.Referer].ToString();
+
+                if(!string.IsNullOrEmpty(urlReferrer) && !urlReferrer.StartsWith(applicationUrl))
+                {
+                    var unauthorizedImagePath = Path.Combine(_wwwrootFolder,"Images/Unauthorized.png");
+                    context.Response.Clear();
+                    await context.Response.SendFileAsync(unauthorizedImagePath);
+                }
+            }
         }
     }
 }
